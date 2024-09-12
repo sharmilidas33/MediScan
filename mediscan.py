@@ -20,6 +20,7 @@ from google.colab import files
 from fuzzywuzzy import process, fuzz
 from fpdf import FPDF
 from datetime import datetime
+from PIL import Image
 
 # Initialize EasyOCR Reader
 reader = easyocr.Reader(['en'])
@@ -223,55 +224,76 @@ def extract_expiry_date(text):
     return None
 
 # Function to generate PDF report
-def generate_pdf_report(medicine_name, medicine_info, expiry_date, packaging_condition, safety_conclusion):
+def generate_pdf_report(medicine_name, medicine_info, expiry_date, packaging_condition, safety_conclusion, image_path):
     # Create instance of FPDF class
     pdf = FPDF()
     pdf.add_page()
 
     # Set title and font
-    pdf.set_font("Arial", 'B', 16)
-    pdf.cell(200, 10, txt="Medicine Analysis Report", ln=True, align='C')
+    pdf.set_font("Arial", 'B', 18)  # Increased title font size
+    pdf.cell(0, 10, txt="Medicine Analysis Report", ln=True, align='C')
 
     # Add date and time
-    pdf.set_font("Arial", size=12)
-    pdf.cell(200, 10, txt=f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", ln=True, align='C')
+    pdf.set_font("Arial", size=14)  # Increased font size for date and time
+    pdf.cell(0, 10, txt=f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", ln=True, align='C')
     pdf.ln(10)
 
+    # Set the width for text area
+    text_area_width = 120  # Adjust the width as needed for the text content
+
     # Add Medicine Name
-    pdf.set_font("Arial", 'B', 14)
-    pdf.cell(200, 10, txt=f"Medicine Name: {medicine_name}", ln=True)
-    pdf.ln(5)
+    pdf.set_font("Arial", 'B', 16)  # Increased font size for medicine name
+    pdf.cell(text_area_width, 10, txt=f"Medicine Name: {medicine_name}", ln=False)
+    
+    # Save current x-position and move to the right for the image
+    x_before_image = pdf.get_x() + text_area_width
+    y_position = pdf.get_y()
 
-    # Add Composition
-    pdf.set_font("Arial", size=12)
-    pdf.multi_cell(0, 10, txt=f"Composition: {medicine_info['Composition']}")
-    pdf.ln(5)
+    # Add Image on the right side with a 1 cm gap from the top right corner
+    image_width = 60  # Width of the image in mm
+    image_height = 60  # Height of the image in mm
 
-    # Add Uses
-    pdf.multi_cell(0, 10, txt=f"Uses: {medicine_info['Uses']}")
-    pdf.ln(5)
+    # 1 cm gap at the top right corner
+    top_margin = 10  # 10 mm = 1 cm
 
-    # Add Side Effects
-    pdf.multi_cell(0, 10, txt=f"Side Effects: {medicine_info['Side_effects']}")
+    # Calculate the x-position for the image
+    page_width = pdf.w - pdf.r_margin  # Right margin
+    x_pos = page_width - image_width - top_margin
+
+    # Add the image
+    pdf.set_xy(x_pos, y_position)
+    pdf.image(image_path, x=x_pos, w=image_width, h=image_height)
+
+    # Move back to the text content area
+    pdf.set_xy(x_before_image, y_position)
+    pdf.set_font("Arial", size=14)  # Increased font size for text content
+
+    # Add Composition, Uses, Side Effects
+    pdf.multi_cell(text_area_width, 10, txt=f"Composition: {medicine_info['Composition']}")
+    pdf.ln(5)
+    pdf.multi_cell(text_area_width, 10, txt=f"Uses: {medicine_info['Uses']}")
+    pdf.ln(5)
+    pdf.multi_cell(text_area_width, 10, txt=f"Side Effects: {medicine_info['Side_effects']}")
     pdf.ln(10)
 
     # Add Packaging Condition
-    pdf.multi_cell(0, 10, txt=f"Packaging Condition: {packaging_condition}")
+    pdf.multi_cell(text_area_width, 10, txt=f"Packaging Condition: {packaging_condition}")
     pdf.ln(5)
 
     # Add Expiry Date
     if expiry_date:
         expiry_str = expiry_date.strftime('%d %b %Y')
-        pdf.multi_cell(0, 10, txt=f"Expiry Date: {expiry_str}")
+        pdf.multi_cell(text_area_width, 10, txt=f"Expiry Date: {expiry_str}")
     else:
-        pdf.multi_cell(0, 10, txt="Expiry Date: Could not be identified.")
+        pdf.multi_cell(text_area_width, 10, txt="Expiry Date: Could not be identified.")
     pdf.ln(10)
 
     # Add Safety Conclusion
-    pdf.set_font("Arial", 'B', 12)
-    pdf.multi_cell(0, 10, txt="Conclusion:")
-    pdf.set_font("Arial", size=12)
-    pdf.multi_cell(0, 10, txt=safety_conclusion)
+    pdf.set_font("Arial", 'B', 14)  # Increased font size for conclusion title
+    pdf.multi_cell(text_area_width, 10, txt="Conclusion:")
+    pdf.set_font("Arial", size=14)  # Increased font size for conclusion text
+    pdf.multi_cell(text_area_width, 10, txt=safety_conclusion)
+    pdf.ln(10)
 
     # Save the file
     file_name = f"Medicine_Report_{medicine_name}.pdf"
@@ -281,12 +303,22 @@ def generate_pdf_report(medicine_name, medicine_info, expiry_date, packaging_con
     # Download the PDF (in Google Colab environment)
     files.download(file_name)
 
-# Modify analyze_medicine to call the PDF generation function
+# Function to save the image locally for the PDF
+def save_image_for_pdf(uploaded_image, medicine_name):
+    img = Image.open(uploaded_image)
+    image_path = f"/tmp/{medicine_name}.png"
+    img.save(image_path)
+    return image_path
+
+# Modify analyze_medicine to call the PDF generation function with image path
 def analyze_medicine(uploaded_image):
     img = Image.open(uploaded_image)
     plt.imshow(img)
     plt.axis('off')
     plt.show()
+
+    # Save the image locally
+    image_path = save_image_for_pdf(uploaded_image, "medicine_name_placeholder")
 
     extracted_text = extract_text_from_image(img)
     print("Extracted Text from Image:")
@@ -323,8 +355,8 @@ def analyze_medicine(uploaded_image):
     
     print(f"\nConclusion: {final_conclusion}")
 
-    # Call the function to generate and download the PDF report
-    generate_pdf_report(medicine_name, medicine_info, expiry_date, packaging_condition, final_conclusion)
+    # Call the function to generate and download the PDF report with image path
+    generate_pdf_report(medicine_name, medicine_info, expiry_date, packaging_condition, final_conclusion, image_path)
 
 # Process uploaded images
 def process_uploaded_images():
@@ -335,6 +367,7 @@ def process_uploaded_images():
 
 # Run the function to handle user-uploaded images
 process_uploaded_images()
+
 
 
 
