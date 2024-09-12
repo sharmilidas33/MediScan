@@ -11,7 +11,11 @@ MediScan is an intelligent system designed to analyze and verify medicine detail
 - **Expiry Date Verification**: Checks the expiry date and provides warnings if the medicine may be expired.
 
 ## Below is the Output and The Sample taken 
-- Output - ![medreport](https://github.com/user-attachments/assets/311bc6f3-929d-4639-979e-8b9f2387a1ca)
+- **Sample Taken as Input** :
+- ![image](https://github.com/user-attachments/assets/6ca90673-8044-4dff-adb9-1c03d8d2267c)
+
+- **Output** :
+- ![medreport](https://github.com/user-attachments/assets/311bc6f3-929d-4639-979e-8b9f2387a1ca)
 
 ## Installation
 
