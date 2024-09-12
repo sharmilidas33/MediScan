@@ -17,8 +17,7 @@ To use MediScan, follow these steps to set up the environment:
 1. **Clone the repository:**
 
     ```bash
-    git clone https://github.com/yourusername/mediscan.git
-    cd mediscan
+    https://github.com/sharmilidas33/MediScan.git
     ```
 
 2. **Install the required packages:**
