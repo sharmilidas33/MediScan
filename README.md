@@ -10,6 +10,9 @@ MediScan is an intelligent system designed to analyze and verify medicine detail
 - **Visual and Packaging Quality Assessment**: Assesses the visual quality of the medicine and packaging condition.
 - **Expiry Date Verification**: Checks the expiry date and provides warnings if the medicine may be expired.
 
+## Below is the Output and The Sample taken 
+- Output - ![medreport](https://github.com/user-attachments/assets/311bc6f3-929d-4639-979e-8b9f2387a1ca)
+
 ## Installation
 
 To use MediScan, follow these steps to set up the environment:
