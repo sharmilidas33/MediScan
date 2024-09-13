@@ -96,6 +96,7 @@ def match_text_with_medicine_details(extracted_text, medicine_details_dict):
     best_match_name = "Unknown"
     best_match_details = {"Composition": "Unknown", "Uses": "Unknown", "Side_effects": "Unknown"}
     best_score = 0
+    best_confidence = 0  # Initialize confidence score
 
     # Extract composition from text
     composition_patterns = [
@@ -118,28 +119,24 @@ def match_text_with_medicine_details(extracted_text, medicine_details_dict):
         medicine_name_lower = medicine_name.lower()
         known_composition = details['Composition'].lower()
 
-        # Debug: Print current medicine name and composition
-        # print(f"Checking: '{medicine_name_lower}' with Composition: '{known_composition}'")
-
         # Calculate partial match scores
         medicine_name_score = fuzz.partial_ratio(text_lower, medicine_name_lower)
         composition_score = fuzz.partial_ratio(extracted_composition, known_composition)
 
-        # Debug: Print scores
-        # print(f"Medicine Name Score: {medicine_name_score}, Composition Score: {composition_score}")
-
         # Combine scores with higher weight on composition score
         combined_score = (medicine_name_score * 0.4) + (composition_score * 0.6)
+        confidence = combined_score  # Confidence score is the combined score
 
         if combined_score > best_score:
             best_score = combined_score
+            best_confidence = confidence
             best_match_name = medicine_name
             best_match_details = details
 
     # Debug: Print best match result
     print(f"Best Match: '{best_match_name}' with Score: {best_score}")
 
-    return best_match_name, best_match_details
+    return best_match_name, best_match_details, best_confidence
 
 # Load medicine details from CSV
 def load_medicine_details_from_csv(file_path):
@@ -187,8 +184,8 @@ def normalize_text(text):
     text = text.replace("AUGUST", "AUG").replace("SEPTEMBER", "SEP")
     text = text.replace("OCTOBER", "OCT").replace("NOVEMBER", "NOV")
     text = text.replace("DECEMBER", "DEC")
-    return text 
-    
+    return text
+
 # Function to analyze medicine
 def extract_expiry_date(text):
     text = normalize_text(text)  # Normalize the text first
@@ -244,7 +241,7 @@ def generate_pdf_report(medicine_name, medicine_info, expiry_date, packaging_con
     # Add Medicine Name
     pdf.set_font("Arial", 'B', 16)  # Increased font size for medicine name
     pdf.cell(text_area_width, 10, txt=f"Medicine Name: {medicine_name}", ln=False)
-    
+
     # Save current x-position and move to the right for the image
     x_before_image = pdf.get_x() + text_area_width
     y_position = pdf.get_y()
@@ -311,7 +308,22 @@ def save_image_for_pdf(uploaded_image, medicine_name):
     return image_path
 
 # Modify analyze_medicine to call the PDF generation function with image path
-def analyze_medicine(uploaded_image):
+def plot_accuracy_graph(results):
+    """
+    Plot a graph showing the accuracy of the medicine matching.
+    """
+    names = [result['medicine_name'] for result in results]
+    confidences = [result['confidence'] for result in results]
+
+    plt.figure(figsize=(12, 6))
+    plt.barh(names, confidences, color='skyblue')
+    plt.xlabel('Confidence Score')
+    plt.title('Accuracy of Medicine Matching')
+    plt.grid(axis='x')
+    plt.show()
+
+# Example usage
+def analyze_medicine_and_evaluate(uploaded_image):
     img = Image.open(uploaded_image)
     plt.imshow(img)
     plt.axis('off')
@@ -324,7 +336,13 @@ def analyze_medicine(uploaded_image):
     print("Extracted Text from Image:")
     print(extracted_text)
 
-    medicine_name, medicine_info = match_text_with_medicine_details(extracted_text, medicine_details_dict)
+    medicine_name, medicine_info, confidence = match_text_with_medicine_details(extracted_text, medicine_details_dict)
+
+    # Example results tracking
+    results.append({
+        'medicine_name': medicine_name,
+        'confidence': confidence
+    })
 
     print(f"\n--- Detailed Medicine Analysis Report ---")
     print(f"Extracted Medicine Name (from packaging): {medicine_name}")
@@ -352,23 +370,25 @@ def analyze_medicine(uploaded_image):
         final_conclusion = f"The {medicine_name} appears to be safe to use based on the expiry date and packaging condition. However, always consult a healthcare professional before use."
     else:
         final_conclusion = f"The {medicine_name} may not be safe to use due to an unclear or expired expiry date. Please verify the expiry date and consult a healthcare professional before use."
-    
+
     print(f"\nConclusion: {final_conclusion}")
 
     # Call the function to generate and download the PDF report with image path
     generate_pdf_report(medicine_name, medicine_info, expiry_date, packaging_condition, final_conclusion, image_path)
+
+# Initialize results list for accuracy tracking
+results = []
 
 # Process uploaded images
 def process_uploaded_images():
     uploaded = files.upload()
     for filename in uploaded.keys():
         print(f'Processing file: {filename}')
-        analyze_medicine(io.BytesIO(uploaded[filename]))
+        analyze_medicine_and_evaluate(io.BytesIO(uploaded[filename]))
 
 # Run the function to handle user-uploaded images
 process_uploaded_images()
 
-
-
-
+# Plot accuracy graph
+plot_accuracy_graph(results)
 
