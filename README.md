@@ -17,6 +17,10 @@ MediScan is an intelligent system designed to analyze and verify medicine detail
 - **Output** :
 - ![medreport](https://github.com/user-attachments/assets/311bc6f3-929d-4639-979e-8b9f2387a1ca)
 
+- **Model Accuracy Graph**
+- ![image](https://github.com/user-attachments/assets/272869f8-0aba-4a2d-b012-9ba0c092ed08)
+
+
 ## Installation
 
 To use MediScan, follow these steps to set up the environment:
